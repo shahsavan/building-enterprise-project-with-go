@@ -87,17 +87,16 @@ components:
         startsAt: { type: string, format: date-time }
 
     Assignment:
-      allOf:
-        - $ref: '#/components/schemas/EntityMetadata'
-        - type: object
-          required: [vehicleId, routeId, startsAt, status]
-          properties:
-            vehicleId: { type: string }
-            routeId: { type: string }
-            startsAt: { type: string, format: date-time }
-            status:
-              type: string
-              enum: [pending, active, completed]
+      type: object
+      required: [vehicleId, routeId, startsAt, status]
+      properties:
+        vehicleId: { type: string }
+        routeId: { type: string }
+        startsAt: { type: string, format: date-time }
+        status:
+          type: string
+          enum: [pending, active, completed]
+        metadata: { $ref: '#/components/schemas/EntityMetadata' }
 
   responses:
     BadRequest:

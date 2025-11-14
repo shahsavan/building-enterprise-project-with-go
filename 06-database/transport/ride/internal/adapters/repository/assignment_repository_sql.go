@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/yourname/transport/ride/internal/core/domain"
-	"github.com/yourname/transport/ride/internal/core/ports"
+	"github.com/yourname/transport/ride/internal/models"
+	"github.com/yourname/transport/ride/internal/ports"
 )
 
 type sqlAssignmentRepository struct {
@@ -16,7 +16,7 @@ func NewSQLAssignmentRepository(db *sql.DB) ports.AssignmentRepository {
 	return &sqlAssignmentRepository{db: db}
 }
 
-func (r *sqlAssignmentRepository) Save(ctx context.Context, a domain.Assignment) (domain.Assignment, error) {
+func (r *sqlAssignmentRepository) Save(ctx context.Context, a models.Assignment) (models.Assignment, error) {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO assignments (id, vehicle_id, route_id, starts_at, status)
 		VALUES (?, ?, ?, ?, ?)
@@ -28,29 +28,29 @@ func (r *sqlAssignmentRepository) Save(ctx context.Context, a domain.Assignment)
 		a.ID, a.VehicleID, a.RouteID, a.StartsAt, a.Status,
 	)
 	if err != nil {
-		return domain.Assignment{}, err
+		return models.Assignment{}, err
 	}
 	return a, nil
 }
 
-func (r *sqlAssignmentRepository) FindByID(ctx context.Context, id string) (domain.Assignment, error) {
+func (r *sqlAssignmentRepository) FindByID(ctx context.Context, id string) (models.Assignment, error) {
 	row := r.db.QueryRowContext(ctx, `
 		SELECT id, vehicle_id, route_id, starts_at, status
 		FROM assignments WHERE id = ?`, id,
 	)
 
-	var a domain.Assignment
+	var a models.Assignment
 	err := row.Scan(&a.ID, &a.VehicleID, &a.RouteID, &a.StartsAt, &a.Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return domain.Assignment{}, nil // caller decides how to handle "not found"
+			return models.Assignment{}, nil // caller decides how to handle "not found"
 		}
-		return domain.Assignment{}, err
+		return models.Assignment{}, err
 	}
 	return a, nil
 }
 
-func (r *sqlAssignmentRepository) FindAll(ctx context.Context, status *string) ([]domain.Assignment, error) {
+func (r *sqlAssignmentRepository) FindAll(ctx context.Context, status *string) ([]models.Assignment, error) {
 	var rows *sql.Rows
 	var err error
 
@@ -71,9 +71,9 @@ func (r *sqlAssignmentRepository) FindAll(ctx context.Context, status *string) (
 	}
 	defer rows.Close()
 
-	var assignments []domain.Assignment
+	var assignments []models.Assignment
 	for rows.Next() {
-		var a domain.Assignment
+		var a models.Assignment
 		if err := rows.Scan(&a.ID, &a.VehicleID, &a.RouteID, &a.StartsAt, &a.Status); err != nil {
 			return nil, err
 		}
