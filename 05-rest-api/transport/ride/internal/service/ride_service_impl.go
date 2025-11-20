@@ -17,11 +17,21 @@ func NewAssignmentService(repo ports.AssignmentRepository) ports.AssignmentServi
 	return &assignmentService{assignmentRepo: repo}
 }
 
-func (s *assignmentService) Create(ctx context.Context, a models.Assignment) (models.Assignment, error) {
+func (s *assignmentService) Save(ctx context.Context, a models.Assignment) (models.Assignment, error) {
 	if a.VehicleID == "" {
 		return models.Assignment{}, errors.New("vehicle ID required")
 	}
-	return s.assignmentRepo.Save(ctx, a)
+	_, err := s.assignmentRepo.Save(ctx, a)
+	if err != nil {
+		return models.Assignment{}, err
+	}
+
+	la, err := s.assignmentRepo.FindByID(ctx, a.ID)
+	if err != nil {
+		return models.Assignment{}, err
+	}
+
+	return la, nil
 }
 
 func (s *assignmentService) GetByID(ctx context.Context, id string) (models.Assignment, error) {
