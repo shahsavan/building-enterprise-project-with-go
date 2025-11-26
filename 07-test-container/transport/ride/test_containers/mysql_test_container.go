@@ -1,5 +1,3 @@
-//go:build integration_test
-
 package test_containers
 
 import (
@@ -21,7 +19,7 @@ var (
 	mysqlPort string
 )
 
-func GetMySqlContainer(db, user, pass string, port *int) (string, string, error) {
+func GetMySqlContainer(ctx context.Context, db, user, pass string, port *int) (string, string, error) {
 	mysqlOnce.Do(func() {
 		c, err := testContainerRunner{
 			servicePort:  3306,
@@ -35,40 +33,47 @@ func GetMySqlContainer(db, user, pass string, port *int) (string, string, error)
 				"MYSQL_PASSWORD":      pass, // user password
 			},
 			hostConfigModifier: mysqlHostConfigModifier(port),
-		}.Run()
+		}.Run(ctx)
 
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to run Test Container")
 		}
-		port, err := c.MappedPort(context.Background(), "5432")
+		port, err := c.MappedPort(ctx, "3306")
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get port")
 		}
-		h, err := c.Host(context.Background())
+		h, err := c.Host(ctx)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to get host")
 		}
 		mysqlHost = h
 		mysqlPort = port.Port()
 		err = isPortAccessible(mysqlHost, mysqlPort)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Port is not accessible")
+		}
 	})
 	return mysqlHost, mysqlPort, nil
 }
 func mysqlHostConfigModifier(port *int) func(hostConfig *container.HostConfig) {
+	var p int
+	if port != nil {
+		p = *port
+	} else {
+		p = 3306
+	}
 	return func(hostConfig *container.HostConfig) {
 		hostConfig.AutoRemove = true
-		if port != nil {
-			hostConfig.PortBindings = nat.PortMap{"5432/tcp": []nat.PortBinding{
-				{
-					HostIP:   "0.0.0.0",
-					HostPort: fmt.Sprintf("%d", *port),
-				},
-			}}
-		}
+		hostConfig.PortBindings = nat.PortMap{"3306/tcp": []nat.PortBinding{
+			{
+				HostIP:   "0.0.0.0",
+				HostPort: fmt.Sprintf("%d", p),
+			},
+		}}
 	}
 }
 func isPortAccessible(host string, port string) error {
-	address := fmt.Sprintf("%s:%s", host, port)
+	address := net.JoinHostPort(host, port)
 	timeout := 2 * time.Second
 	var err error
 
@@ -83,8 +88,7 @@ func isPortAccessible(host string, port string) error {
 		time.Sleep(3 * time.Second)
 	}
 	if err != nil {
-		return fmt.Errorf("[isPortAccessible] %w", err)
+		return err
 	}
-	time.Sleep(10 * time.Second)
 	return nil
 }

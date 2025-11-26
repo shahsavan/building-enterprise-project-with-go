@@ -1,5 +1,3 @@
-//go:build integration_test
-
 package repository_test
 
 import (
@@ -16,7 +14,8 @@ import (
 )
 
 func TestSQLAssignmentRepository_SaveAndFind(t *testing.T) {
-	host, port, err := test_containers.GetMySqlContainer("testdb", "testuser", "testpass", nil)
+	ctx := context.Background()
+	host, port, err := test_containers.GetMySqlContainer(ctx, "testdb", "testuser", "testpass", nil)
 	if err != nil {
 		t.Fatalf("failed to start container: %v", err)
 	}
@@ -29,13 +28,17 @@ func TestSQLAssignmentRepository_SaveAndFind(t *testing.T) {
 	defer db.Close()
 
 	// Schema setup
-	_, _ = db.Exec(`CREATE TABLE IF NOT EXISTS assignments (
-        id VARCHAR(50) PRIMARY KEY,
-        vehicle_id VARCHAR(50),
-        route_id VARCHAR(50),
-        starts_at DATETIME,
-        status VARCHAR(20)
-    );`)
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS assignments (
+	    id VARCHAR(50) PRIMARY KEY,
+	    vehicle_id VARCHAR(50),
+	    route_id VARCHAR(50),
+	    starts_at DATETIME,
+	    status VARCHAR(20)
+	);`)
+
+	if err != nil {
+		t.Fatalf("failed to create table: %v", err)
+	}
 
 	repo := repository.NewSQLAssignmentRepository(db)
 
