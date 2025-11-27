@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/yourname/transport/ride/configs"
@@ -170,4 +172,63 @@ database
 			}
 		})
 	}
+}
+
+func FuzzLoadConfigEnvOverrides(f *testing.F) {
+	const baseConfig = `
+server:
+  port: 8080
+  read_timeout_sec: 30
+  write_timeout_sec: 30
+database:
+  host: "mysql.internal"
+  port: 3306
+  user: "ride_user"
+  password: "from_file"
+  name: "transportdb"
+  max_open_conns: 20
+  max_idle_conns: 5
+`
+
+	// Seeds cover common and edge cases: valid override, invalid port, and max-ish port.
+	f.Add("9090", "from_env")
+	f.Add("not-a-number", "")
+	f.Add("65535", "rot13$ecret")
+
+	f.Fuzz(func(t *testing.T, portEnv, passwordEnv string) {
+		// testing.F may generate strings with NULs which Setenv rejects; strip them to keep fuzzing valid inputs.
+		portEnv = strings.ReplaceAll(portEnv, "\x00", "")
+		passwordEnv = strings.ReplaceAll(passwordEnv, "\x00", "")
+
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		if err := os.WriteFile(path, []byte(baseConfig), 0600); err != nil {
+			t.Fatalf("failed to write temp config file: %v", err)
+		}
+
+		if portEnv != "" {
+			t.Setenv("SERVER_PORT", portEnv)
+		}
+		t.Setenv("DB_PASSWORD", passwordEnv)
+
+		cfg, err := configs.LoadConfig(path)
+		if err != nil {
+			t.Fatalf("LoadConfig returned error: %v", err)
+		}
+
+		if p, err := strconv.Atoi(portEnv); err == nil {
+			if cfg.Server.Port != p {
+				t.Fatalf("expected server port %d after env override, got %d", p, cfg.Server.Port)
+			}
+		} else if cfg.Server.Port != 8080 {
+			t.Fatalf("expected fallback server port 8080 when env is invalid, got %d", cfg.Server.Port)
+		}
+
+		expectedPassword := "from_file"
+		if passwordEnv != "" {
+			expectedPassword = passwordEnv
+		}
+		if cfg.Database.Password != expectedPassword {
+			t.Fatalf("expected password %q, got %q", expectedPassword, cfg.Database.Password)
+		}
+	})
 }
