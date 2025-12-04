@@ -18,7 +18,6 @@ func NewAssignmentCreatedProducer(client pulsar.Client) (*Producer[ports.Assignm
 		Schema: schema,
 	})
 	if err != nil {
-		client.Close()
 		return nil, fmt.Errorf("create producer: %w", err)
 	}
 

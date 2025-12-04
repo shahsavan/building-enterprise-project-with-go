@@ -13,7 +13,7 @@ type Message[T any] struct {
 	Attempt  int // redelivery count (if available)
 	Metadata map[string]string
 	Ack      func() error // ack on success
-	Nack     func() error // request redelivery
+	Nack     func()       // request redelivery
 }
 
 // Business logic hook. Your app implements this per event.
@@ -21,13 +21,9 @@ type Processor[T any] interface {
 	Process(ctx context.Context, msg Message[T]) error
 }
 
-// Outbound port for publishing events (incl. DLQ).
-type EventProducer[T any] interface {
-	Send(ctx context.Context, value T) (string, error)
-}
-
 // Inbound port: the consumer owns receive/ack/nack plumbing and delegates to Processor.
-type EventConsumer interface {
-	Start(ctx context.Context) error
+type EventConsumer[T any] interface {
+	// Start registers the Processor and begins consuming until ctx is done or a fatal error occurs.
+	Start(ctx context.Context, processor Processor[T]) error
 	Stop(ctx context.Context) error
 }
