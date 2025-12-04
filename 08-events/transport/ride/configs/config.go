@@ -25,9 +25,14 @@ type DatabaseConfig struct {
 	MaxIdleConns int    `yaml:"max_idle_conns"`
 }
 
+type PulsarConfig struct {
+	URL string `yaml: "url"`
+}
+
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
+	Pulsar   PulsarConfig   `yaml:"pulsar"`
 }
 
 // LoadConfig reads and parses the configuration file from the given path.
