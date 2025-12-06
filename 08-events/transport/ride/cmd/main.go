@@ -33,5 +33,30 @@ func main() {
 
 	assignmentRepo := repository.NewSQLAssignmentRepository(db)
 
+	// ctx := context.Background()
+	// client, err := pulsar.NewClient(pulsar.ClientOptions{URL: cfg.Pulsar.URL})
+	// if err != nil {
+	// 	log.Fatalf("failed to open pulsar connection: %w", err)
+	// }
+	// defer client.Close()
+
+	// producer, err := pulsarproducer.NewAssignmentCreatedProducer(client)
+	// if err != nil {
+	// 	log.Fatalf("failed to create pulsar producer: %v", err)
+	// }
+	// defer producer.Close()
+
+	// driverID := "driver-123"
+	// m := ports.AssignmentCreated{
+	// 	AssignmentID: "assign-001",
+	// 	VehicleID:    "vehicle-456",
+	// 	RouteID:      "route-789",
+	// 	Timestamp:    "2024-01-01T00:00:00Z",
+	// 	DriverID:     &driverID,
+	// }
+	// if _, err := producer.Send(ctx, m); err != nil {
+	// 	log.Printf("failed to publish assignment: %v", err)
+	// }
+
 	httpserver.Run(cfg.Server, assignmentRepo)
 }

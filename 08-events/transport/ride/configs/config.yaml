@@ -11,3 +11,6 @@ database:
   name: "transportdb"
   max_open_conns: 20
   max_idle_conns: 5
+
+pulsar:
+  url: "pulsar://localhost:6650"
