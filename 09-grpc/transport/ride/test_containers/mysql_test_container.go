@@ -23,7 +23,7 @@ func GetMySqlContainer(ctx context.Context, db, user, pass string, port *int) (s
 		c, err := testContainerRunner{
 			servicePort:  3306,
 			name:         "mysql",
-			image:        "mysql:8.0.36", // pin to a stable version
+			image:        "mysql:8.0.44", // pin to a stable version
 			exposedPorts: []string{"3306/tcp"},
 			env: map[string]string{
 				"MYSQL_ROOT_PASSWORD": pass, // root password

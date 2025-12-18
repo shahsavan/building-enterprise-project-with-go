@@ -28,7 +28,7 @@ func GetPulsarContainer(ctx context.Context, servicePort, httpPort *int) (string
 		c, err := testContainerRunner{
 			servicePort:  6650,
 			name:         "pulsar",
-			image:        "apachepulsar/pulsar:3.3.1",
+			image:        "apachepulsar/pulsar:4.0.8",
 			exposedPorts: []string{"6650/tcp", "8080/tcp"},
 			env:          map[string]string{},
 			cmd:          []string{"/bin/bash", "-c", "bin/pulsar standalone"},
