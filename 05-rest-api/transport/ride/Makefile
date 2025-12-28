@@ -24,3 +24,6 @@ run:
 
 clean:
 	rm -rf $(BIN_DIR)/$(BIN_NAME)
+
+openapi_generate:
+	go generate ./api
