@@ -26,8 +26,12 @@ func (o *TransportObservable[T]) Subscribe() <-chan TransportEvent[T] {
 func (o *TransportObservable[T]) Publish(evt TransportEvent[T]) {
 
 	for _, ch := range o.subs {
-		ch <- evt
-
+		select {
+		case ch <- evt:
+		default:
+			// observer is slow; choose drop, block, or log
+			// depending on transport system requirements
+		}
 	}
 }
 
