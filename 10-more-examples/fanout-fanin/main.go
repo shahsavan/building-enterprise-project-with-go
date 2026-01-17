@@ -18,7 +18,7 @@ func processDelivery(req DeliveryRequest) string {
 	return fmt.Sprintf("ticket %s: %s -> %s", req.ID, req.Pickup, req.Dropoff)
 }
 
-// merge is the fan-in stage: it drains multiple inputs into a single output.
+// merge is the fan-in stage: it drains multiple inputs into a single output, respecting cancellation.
 func merge[T any](inputs ...<-chan T) <-chan T {
 	var wg sync.WaitGroup
 	output := make(chan T)
@@ -57,7 +57,11 @@ func worker[T any, R any](ctx context.Context, id int, in <-chan T, process func
 				}
 				time.Sleep(150 * time.Millisecond) // simulate work
 				fmt.Printf("worker %d handling %v\n", id, n)
-				out <- process(n)
+				select {
+				case <-ctx.Done():
+					return
+				case out <- process(n):
+				}
 
 			}
 		}
@@ -66,6 +70,9 @@ func worker[T any, R any](ctx context.Context, id int, in <-chan T, process func
 }
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
 	requests := []DeliveryRequest{
 		{ID: "A1", Pickup: "Central Depot", Dropoff: "North Hub"},
 		{ID: "B2", Pickup: "Warehouse", Dropoff: "Airport"},
@@ -74,12 +81,11 @@ func main() {
 		{ID: "E5", Pickup: "East Yard", Dropoff: "Harbor"},
 	}
 	jobs := make(chan DeliveryRequest)
-	ctx, cancel := context.WithCancel(context.Background())
 
 	worker1Output := worker(ctx, 1, jobs, processDelivery)
 	worker2Output := worker(ctx, 2, jobs, processDelivery)
 	worker3Output := worker(ctx, 3, jobs, processDelivery)
-	cancel()
+
 	// Feed work and then close the input channel.
 	go func() {
 		defer close(jobs)
